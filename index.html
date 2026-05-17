@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Raspadinha Secreta</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(255, 92, 141, 0.25), transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(210, 180, 255, 0.25), transparent 40%),
+        linear-gradient(135deg, #0f0212, #260321, #050006);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: white;
+      padding: 15px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .card {
+      padding: clamp(25px, 5vw, 40px) clamp(15px, 4vw, 24px);
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6), 
+                  inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 6vw, 2.4rem);
+      margin-bottom: 10px;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff, #ffb4d6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 25px;
+      line-height: 1.5;
+      font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+    }
+
+    .scratch-area {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 300 / 270;
+      margin: 0 auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Começa invisível para não vazar a mensagem de texto antes do Canvas carregar */
+      opacity: 0;
+      transition: opacity 0.4s ease-in-out;
+    }
+
+    .message-heart {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15% 12%;
+      text-align: center;
+      color: #500626;
+      font-size: clamp(0.95rem, 4.5vw, 1.15rem);
+      font-weight: 800;
+      line-height: 1.45;
+      background: linear-gradient(135deg, #ffffff, #ffe3ee);
+      
+      -webkit-mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 300 270" xmlns="http://www.w3.org/2000/svg"><path d="M150 255 C38 170 0 112 20 58 C37 13 90 0 127 38 C137 49 145 62 150 76 C155 62 163 49 173 38 C210 0 263 13 280 58 C300 112 262 170 150 255 Z"/></svg>');
+      -webkit-mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 300 270" xmlns="http://www.w3.org/2000/svg"><path d="M150 255 C38 170 0 112 20 58 C37 13 90 0 127 38 C137 49 145 62 150 76 C155 62 163 49 173 38 C210 0 263 13 280 58 C300 112 262 170 150 255 Z"/></svg>');
+      mask-size: contain;
+      mask-repeat: no-repeat;
+      mask-position: center;
+      
+      box-shadow: inset 0 -15px 30px rgba(255, 105, 180, 0.3);
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      touch-action: none;
+      filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
+      transition: opacity 0.8s ease;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #ffb4d6;
+      min-height: 24px;
+    }
+
+    .progress {
+      width: 85%;
+      height: 8px;
+      margin: 14px auto 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bar {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff4181, #ffb4d6);
+      transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-reset {
+      margin-top: 20px;
+      padding: 12px 24px;
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transform: scale(0.8);
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-reset.show {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    .floating-heart {
+      position: fixed;
+      color: rgba(255, 105, 180, 0.15);
+      animation: float 14s linear infinite;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    @keyframes float {
+      from { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+      15% { opacity: 1; }
+      to { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+    }
+
+    .confetti {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10;
+      animation: fall 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(-5vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="hearts"></div>
+
+  <main class="container">
+    <section class="card" id="mainCard">
+      <h1>Raspadinha do Amor</h1>
+      <p>Use o dedo para raspar todo o coração e descobrir o que te espera.</p>
+
+      <div class="scratch-area" id="scratchWrapper">
+        <div class="message-heart">
+          Você não é o amor da minha vida, você é o que eu escolhi pra ela❤️
+        </div>
+        <canvas id="scratchCanvas"></canvas>
+      </div>
+
+      <div class="status" id="status">Raspe o coração...</div>
+
+      <div class="progress">
+        <div class="bar" id="bar"></div>
+      </div>
+
+      <button class="btn-reset" id="resetBtn" onclick="resetCard()">Rever</button>
+    </section>
+  </main>
+
+  <script>
+    const wrapper = document.getElementById("scratchWrapper");
+    const canvas = document.getElementById("scratchCanvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const statusText = document.getElementById("status");
+    const bar = document.getElementById("bar");
+    const resetBtn = document.getElementById("resetBtn");
+    const card = document.getElementById("mainCard");
+
+    const mensagens = [
+      "Gatinha eu te amo, criscris linda",
+      "gostosa, linda, perfeita, amorosa, meu amor💖",
+      "obrigado por ter me cativado✨",
+      "Te amo meu amor, lindaaaa!💖"
+    ];
+
+    let isScratching = false;
+    let lastPoint = null;
+    let revealed = false;
+    
+    const baseWidth = 300;
+    const baseHeight = 270;
+    let currentPixelsToErase = 0; 
+    let brushSize = 22; 
+
+    function initCanvas() {
+      // Garante que a área comece invisível durante o processo de renderização
+      wrapper.style.opacity = "0";
+
+      const rect = wrapper.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      brushSize = rect.width * 0.08; 
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      
+      drawCover(rect.width, rect.height);
+      calculateInitialPixels();
+
+      // Só exibe a área na tela depois que a raspadinha foi totalmente pintada por cima
+      setTimeout(() => {
+        wrapper.style.opacity = "1";
+      }, 50);
+    }
+
+    function drawCover(w, h) {
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "source-over";
+
+      const scaleX = w / baseWidth;
+      const scaleY = h / baseHeight;
+
+      const pathStr = "M150 255 C38 170 0 112 20 58 C37 13 90 0 127 38 C137 49 145 62 150 76 C155 62 163 49 173 38 C210 0 263 13 280 58 C300 112 262 170 150 255 Z";
+      const heart = new Path2D(pathStr);
+
+      ctx.save();
+      ctx.scale(scaleX, scaleY);
+      ctx.clip(heart);
+
+      const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
+      gradient.addColorStop(0, "#ff9ebb");
+      gradient.addColorStop(0.3, "#ff4b8b");
+      gradient.addColorStop(0.7, "#bd1657");
+      gradient.addColorStop(1, "#590224");
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+      for (let i = 0; i < 350; i++) {
+        ctx.fillRect(Math.random() * baseWidth, Math.random() * baseHeight, 1.5, 1.5);
+      }
+      
+      for (let i = 0; i < 15; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255, 200, 220, 0.3)";
+        ctx.arc(Math.random() * baseWidth, Math.random() * baseHeight, Math.random() * 8 + 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 24px 'Segoe UI', sans-serif";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+      ctx.shadowBlur = 4;
+      ctx.fillText("RASPE AQUI", baseWidth / 2, baseHeight / 2 - 2);
+
+      ctx.font = "bold 13px 'Segoe UI', sans-serif";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.shadowBlur = 0;
+      ctx.fillText("com carinho ✨", baseWidth / 2, baseHeight / 2 + 24);
+
+      ctx.restore();
+    }
+
+    function calculateInitialPixels() {
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      currentPixelsToErase = 0;
+      for (let i = 3; i < data.length; i += 4 * 24) {
+        if (data[i] > 50) currentPixelsToErase++;
+      }
+    }
+
+    function getPosition(event) {
+      const rect = canvas.getBoundingClientRect();
+      const touch = event.touches ? event.touches[0] : event;
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+    }
+
+    function startScratch(event) {
+      if (revealed) return;
+      if (event.cancelable) event.preventDefault();
+      isScratching = true;
+      lastPoint = getPosition(event);
+    }
+
+    function stopScratch() {
+      isScratching = false;
+      lastPoint = null;
+    }
+
+    function scratch(event) {
+      if (!isScratching || revealed) return;
+      if (event.cancelable) event.preventDefault();
+
+      const point = getPosition(event);
+      
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = brushSize * 2; 
+
+      ctx.beginPath();
+      if (lastPoint) {
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+      } else {
+        ctx.arc(point.x, point.y, brushSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      lastPoint = point;
+
+      if(!scratch.timeout) {
+        scratch.timeout = setTimeout(() => {
+          updateProgress();
+          scratch.timeout = null;
+        }, 60); 
+      }
+    }
+
+    function updateProgress() {
+      if(currentPixelsToErase === 0) return;
+
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let remainingPixels = 0;
+
+      for (let i = 3; i < data.length; i += 4 * 24) {
+        if (data[i] > 50) remainingPixels++;
+      }
+
+      const erased = currentPixelsToErase - remainingPixels;
+      const percent = Math.min((erased / currentPixelsToErase) * 100, 100);
+      
+      bar.style.width = percent + "%";
+
+      if (percent < 30) statusText.textContent = "Continue raspando...";
+      else if (percent < 70) statusText.textContent = "Está quase aparecendo...";
+      else if (percent < 95) statusText.textContent = "Limpe mais um pouquinho os cantos!";
+
+      if (percent >= 95) {
+        revealMessage();
+      }
+    }
+
+    function revealMessage() {
+      if (revealed) return;
+      revealed = true;
+      
+      canvas.style.opacity = "0";
+      setTimeout(() => { canvas.style.display = "none"; }, 800);
+      
+      bar.style.width = "100%";
+      statusText.textContent = "Revelado com sucesso! ❤️";
+      resetBtn.classList.add("show");
+
+      triggerConfetti();
+      playSuccessSound();
+    }
+
+    function playSuccessSound() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const audioCtx = new AudioContext();
+      const notas = [261.63, 329.63, 392.00, 523.25]; 
+      
+      notas.forEach((freq, idx) => {
+        setTimeout(() => {
+          const osc = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          
+          gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+          
+          osc.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          
+          osc.start();
+          osc.stop(audioCtx.currentTime + 1.2);
+        }, idx * 140);
+      });
+    }
+
+    function triggerConfetti() {
+      const cores = ["#ff4181", "#ffb4d6", "#ffffff", "#ffeb3b", "#9c27b0"];
+      for (let i = 0; i < 60; i++) {
+        const confetti = document.createElement("div");
+        confetti.className = "confetti";
+        
+        confetti.textContent = Math.random() > 0.4 ? "❤️" : "🌸";
+        if(confetti.textContent === "🌸") {
+          confetti.style.color = cores[Math.floor(Math.random() * cores.length)];
+        }
+        
+        confetti.style.left = Math.random() * 100 + "vw";
+        confetti.style.fontSize = Math.random() * 14 + 10 + "px";
+        confetti.style.animationDuration = Math.random() * 1.5 + 1.5 + "s";
+        confetti.style.animationDelay = Math.random() * 0.4 + "s";
+        
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 3000);
+      }
+    }
+
+    function resetCard() {
+      revealed = false;
+      isScratching = false;
+      lastPoint = null;
+      
+      const msgContainer = document.querySelector(".message-heart");
+      let novaMsg = msgContainer.textContent;
+      while (novaMsg.trim() === msgContainer.textContent.trim()) {
+        novaMsg = mensagens[Math.floor(Math.random() * mensagens.length)];
+      }
+      msgContainer.textContent = novaMsg;
+
+      bar.style.width = "0%";
+      statusText.textContent = "Raspe o coração...";
+      resetBtn.classList.remove("remove");
+      resetBtn.classList.remove("show");
+      
+      canvas.style.display = "block";
+      canvas.style.opacity = "1";
+      
+      initCanvas();
+    }
+
+    function createBackgroundHearts() {
+      const container = document.getElementById("hearts");
+      container.innerHTML = "";
+      for (let i = 0; i < 15; i++) {
+        const heart = document.createElement("div");
+        heart.className = "floating-heart";
+        heart.textContent = Math.random() > 0.5 ? "♥" : "💖";
+        heart.style.left = Math.random() * 100 + "vw";
+        heart.style.fontSize = Math.random() * 20 + 10 + "px";
+        heart.style.animationDuration = Math.random() * 6 + 10 + "s";
+        heart.style.animationDelay = Math.random() * 7 + "s";
+        container.appendChild(heart);
+      }
+    }
+
+    canvas.addEventListener("contextmenu", e => e.preventDefault());
+    canvas.addEventListener("mousedown", startScratch);
+    window.addEventListener("mousemove", scratch);
+    window.addEventListener("mouseup", stopScratch);
+
+    canvas.addEventListener("touchstart", startScratch, { passive: false });
+    window.addEventListener("touchmove", scratch, { passive: false });
+    window.addEventListener("touchend", stopScratch);
+
+    let lastWidth = window.innerWidth;
+    window.addEventListener("resize", () => {
+      if (window.innerWidth !== lastWidth && !revealed) {
+        lastWidth = window.innerWidth;
+        initCanvas();
+      }
+    });
+
+    initCanvas();
+    createBackgroundHearts();
+  </script>
+</body>
+</html>
